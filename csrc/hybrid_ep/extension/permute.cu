@@ -623,4 +623,14 @@
  
    CUDA_CHECK(cudaGetLastError());
  }
- 
+
+ __global__ void drop_tokens_kernel(int* num_dispatched_tokens_ptr,int num_dispatched_tokens){
+   auto old_val = *num_dispatched_tokens_ptr;
+   auto new_val = min(num_dispatched_tokens, old_val);
+   *num_dispatched_tokens_ptr = new_val;
+ }
+
+ void drop_tokens_launcher(torch::Tensor num_dispatched_tokens_tensor,int num_dispatched_tokens, cudaStream_t stream){
+   drop_tokens_kernel<<<1, 1, 0, stream>>>(num_dispatched_tokens_tensor.data_ptr<int>(), num_dispatched_tokens);
+   CUDA_CHECK(cudaGetLastError());
+ }

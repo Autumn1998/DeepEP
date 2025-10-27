@@ -461,9 +461,12 @@ HybridEPBuffer::dispatch(HybridEpConfigInstance config,
   args.rdma_to_attn_map = rdma_to_attn_map;
   args.attn_to_rdma_map = attn_to_rdma_map;
   args.num_dispatched_tokens_tensor = num_dispatched_tokens_tensor;
-  args.num_dispatched_tokens = (num_dispatched_tokens.has_value()) ? 
-                                num_dispatched_tokens.value() : 
-                                num_dispatched_tokens_tensor.value().item<int64_t>();
+  if(num_dispatched_tokens.has_value()){
+    drop_tokens_launcher(num_dispatched_tokens_tensor.value(), num_dispatched_tokens.value(), at::cuda::getCurrentCUDAStream());
+    args.num_dispatched_tokens = num_dispatched_tokens.value();
+  } else {
+    args.num_dispatched_tokens = num_dispatched_tokens_tensor.value().item<int64_t>();
+  }
   args.num_of_tokens_per_rank = num_of_tokens_per_rank;
   args.enable_permute = false;
   args.stream = at::cuda::getCurrentCUDAStream();

@@ -97,6 +97,10 @@
                          bool with_probs,
                          cudaStream_t stream);
  
+ void drop_tokens_launcher(torch::Tensor num_dispatched_tokens_tensor,
+                          int num_dispatched_tokens, 
+                          cudaStream_t stream);
+
  template <typename DType>
  inline __device__ float DType2Float(DType value) {
    if constexpr (std::is_same<DType, __nv_bfloat16>::value) {
