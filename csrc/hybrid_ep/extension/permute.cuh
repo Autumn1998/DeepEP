@@ -90,6 +90,7 @@
                          int num_of_local_experts,
                          torch::Tensor num_dispatched_tokens_tensor,
                          int num_dispatched_tokens,
+                         int num_permuted_token,
                          int pad_multiple,
                          int hidden_size,
                          int local_rank,

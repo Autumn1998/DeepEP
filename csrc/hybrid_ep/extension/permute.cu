@@ -49,6 +49,7 @@
                                                    int num_of_local_experts,
                                                    torch::Tensor num_dispatched_tokens_tensor,
                                                    int num_dispatched_tokens,
+                                                   int num_permuted_token,
                                                    int pad_multiple,
                                                    int hidden_size,
                                                    int local_rank,
@@ -339,7 +340,8 @@
                                 int hidden_size,
                                 int scales_per_token,
                                 int local_rank,
-                                int num_ranks_per_node) {
+                                int num_ranks_per_node,
+                                int num_permuted_token) {
    // Index of the current token
    // Each extended warp contains 4 warps, and will dispatch 1 tokens to
    // multi-experts
@@ -373,7 +375,7 @@
    float4* permuted_tokens_fp4 = reinterpret_cast<float4*>(permuted_tokens);
    for (int64_t i = 0; i < num_of_local_experts; i++) {
      int64_t dest_token_id = expert_routing_map[extended_warp_id * num_of_local_experts + i];
-     if (dest_token_id > 0) {
+     if (dest_token_id > 0 && (num_permuted_token >= 0 && dest_token_id < num_permuted_token)) {
        for (int64_t j = extended_laned_id; j < hidden_size_fp4; j += 128) {
          permuted_tokens_fp4[(dest_token_id - 1) * hidden_size_fp4 + j] =
              tokens_fp4[token_id * hidden_size_fp4 + j];
@@ -389,7 +391,7 @@
    if (scaling_factor != nullptr) {
      for (int64_t i = 0; i < num_of_local_experts; i++) {
        int64_t dest_token_id = expert_routing_map[extended_warp_id * num_of_local_experts + i];
-       if (dest_token_id > 0) {
+       if (dest_token_id > 0 && (num_permuted_token >= 0 && dest_token_id < num_permuted_token)) {
          for (int64_t j = extended_laned_id; j < scales_per_token; j += 128) {
            permuted_scaling_factor[(dest_token_id - 1) * scales_per_token + j] =
                scaling_factor[token_id * scales_per_token + j];
@@ -406,7 +408,7 @@
    if (probs != nullptr) {
      for (int64_t i = 0; i < num_of_local_experts; i++) {
        int64_t dest_token_id = expert_routing_map[extended_warp_id * num_of_local_experts + i];
-       if (dest_token_id > 0) {
+       if (dest_token_id > 0 && (num_permuted_token >= 0 && dest_token_id < num_permuted_token)) {
          permuted_probs[dest_token_id - 1] =
              probs[token_id * num_of_local_experts * num_ranks_per_node +
                    local_rank * num_of_local_experts + i];
@@ -486,7 +488,7 @@
        with_probs ? reinterpret_cast<float*>(probs_ptr) : nullptr,
        with_probs ? permuted_probs.data_ptr<float>() : nullptr, row_id_map.data_ptr<int>(),
        num_dispatched_token_tensor.data_ptr<int>(), pad_multiple, num_of_local_experts, hidden_size,
-       scales_per_token, local_rank, num_ranks_per_node);
+       scales_per_token, local_rank, num_ranks_per_node, num_permuted_token);
    CUDA_CHECK(cudaGetLastError());
  
    return std::make_tuple(permuted_tokens, permuted_scaling_factor, permuted_probs);
@@ -502,7 +504,8 @@
                                   int num_of_local_experts,
                                   int hidden_size,
                                   int local_rank,
-                                  int num_ranks_per_node) {
+                                  int num_ranks_per_node,
+                                  int num_permuted_token) {
    // Index of the current token
    // Each extended warp contains 4 warps, and will reduce multi-experts tokens
    // to 1 token
@@ -546,7 +549,7 @@
        accumulator_fp4[k] = 0.0f;
      for (int i = 0; i < num_of_local_experts; i++) {
        int64_t source_token_id = expert_routing_map[extended_warp_id * num_of_local_experts + i];
-       if (source_token_id > 0) {
+       if (source_token_id > 0 && (num_permuted_token >= 0 && source_token_id < num_permuted_token)) {
          buffer_fp4 = permuted_tokens_fp4[(source_token_id - 1) * hidden_size_fp4 + j];
  #pragma unroll
          for (int k = 0; k < num_eles_per_float4; k++) {
@@ -569,7 +572,7 @@
        if (j / num_of_local_experts == local_rank) {
          int64_t source_token_id =
              expert_routing_map[extended_warp_id * num_of_local_experts + j % num_of_local_experts];
-         if (source_token_id > 0) {
+         if (source_token_id > 0 && (num_permuted_token >= 0 && source_token_id < num_permuted_token)) {
            value = static_cast<float>(permuted_probs[source_token_id - 1]);
          }
        }
@@ -588,6 +591,7 @@
                          int num_of_local_experts,
                          torch::Tensor num_dispatched_tokens_tensor,
                          int num_dispatched_tokens,
+                         int num_permuted_token,
                          int pad_multiple,
                          int hidden_size,
                          int local_rank,
@@ -619,7 +623,7 @@
        with_probs ? reinterpret_cast<float*>(permuted_probs.value().data_ptr()) : nullptr,
        with_probs ? reinterpret_cast<float*>(probs_ptr) : nullptr, row_id_map.data_ptr<int>(),
        num_dispatched_tokens_tensor.data_ptr<int>(), num_of_local_experts, hidden_size, local_rank,
-       num_ranks_per_node);
+       num_ranks_per_node, num_permuted_token);
  
    CUDA_CHECK(cudaGetLastError());
  }

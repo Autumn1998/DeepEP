@@ -225,6 +225,7 @@ void Executor::combine_preprocess(HybridEpConfigInstance config, CombineBuffers&
     
         auto num_dispatched_tokens = args.num_dispatched_tokens;
         auto num_dispatched_tokens_tensor = args.num_dispatched_tokens_tensor.value();
+        auto num_permuted_token = args.num_permuted_tokens;
         // If args.num_dispatched_tokens >= 0, which means that the sync-free model is used.
         // Otherwise, we will use the values in args.num_dispatched_tokens_tensor.
         if (num_dispatched_tokens < 0) {
@@ -235,6 +236,7 @@ void Executor::combine_preprocess(HybridEpConfigInstance config, CombineBuffers&
             args.hidden, args.probs, reinterpret_cast<uint16_t*>(combine_buffers.expert_input_token),
             reinterpret_cast<float*>(combine_buffers.expert_input_prob), args.row_id_map.value(),
             config.num_of_experts_per_rank, num_dispatched_tokens_tensor, num_dispatched_tokens,
+            num_permuted_token,
             args.pad_multiple, config.hidden_dim, local_rank, config.num_of_ranks_per_node, 
             config.backward_combine_api, args.stream);
     

@@ -505,6 +505,7 @@ class HybridEPBuffer:
         hidden: torch.Tensor,
         probs: torch.Tensor = None,
         num_dispatched_tokens: int = None,
+        num_permuted_tokens: int = None,
         handle: tuple = None,
         pad_multiple: int = None,
     ):
@@ -537,6 +538,7 @@ class HybridEPBuffer:
                 num_dispatched_tokens_tensor=num_dispatched_tokens_tensor,
                 row_id_map=row_id_map,
                 num_dispatched_tokens=num_dispatched_tokens,
+                num_permuted_tokens=num_permuted_tokens,
                 num_of_tokens_per_rank=num_of_tokens_per_rank,
                 pad_multiple=pad_multiple,
                 with_probs=probs is not None,

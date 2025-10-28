@@ -462,8 +462,8 @@ HybridEPBuffer::dispatch(HybridEpConfigInstance config,
   args.attn_to_rdma_map = attn_to_rdma_map;
   args.num_dispatched_tokens_tensor = num_dispatched_tokens_tensor;
   if(num_dispatched_tokens.has_value()){
-    drop_tokens_launcher(num_dispatched_tokens_tensor.value(), num_dispatched_tokens.value(), at::cuda::getCurrentCUDAStream());
     args.num_dispatched_tokens = num_dispatched_tokens.value();
+    drop_tokens_launcher(args.num_dispatched_tokens_tensor.value(), args.num_dispatched_tokens, at::cuda::getCurrentCUDAStream());
   } else {
     args.num_dispatched_tokens = num_dispatched_tokens_tensor.value().item<int64_t>();
   }
@@ -612,6 +612,7 @@ HybridEPBuffer::combine_with_unpermute(HybridEpConfigInstance config,
         torch::Tensor attn_to_rdma_map, c10::optional<torch::Tensor> num_dispatched_tokens_tensor,
         c10::optional<torch::Tensor> row_id_map,
         c10::optional<int64_t> num_dispatched_tokens,
+        c10::optional<int64_t> num_permuted_tokens,
         int64_t num_of_tokens_per_rank,
         c10::optional<int64_t> pad_multiple,
         bool with_probs)
@@ -651,6 +652,7 @@ HybridEPBuffer::combine_with_unpermute(HybridEpConfigInstance config,
                                 num_dispatched_tokens.value() : 
                                 num_dispatched_tokens_tensor.value().item<int64_t>();
   args.row_id_map = row_id_map;
+  args.num_permuted_tokens = (num_permuted_tokens.has_value()) ? num_permuted_tokens.value() : -1;
   args.pad_multiple = (pad_multiple.has_value()) ? pad_multiple.value() : 0;
   args.num_of_tokens_per_rank = num_of_tokens_per_rank;
   args.enable_unpermute = true;

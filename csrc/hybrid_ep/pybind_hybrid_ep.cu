@@ -136,6 +136,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
              py::arg("sparse_to_dense_map"), py::arg("rdma_to_attn_map"),
              py::arg("attn_to_rdma_map"), py::arg("num_dispatched_tokens_tensor"),
              py::arg("row_id_map"), py::arg("num_dispatched_tokens") = -1,
+             py::arg("num_permuted_tokens") = -1,
              py::arg("num_of_tokens_per_rank"), py::arg("pad_multiple") = 0,
              py::arg("with_probs") = false);    
   }

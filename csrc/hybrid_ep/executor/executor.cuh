@@ -57,6 +57,7 @@ public:
         c10::optional<torch::Tensor> row_id_map;  // Used in the unpermute
         // Used in the sync-free Unpermute
         int64_t num_dispatched_tokens = -1;
+        int64_t num_permuted_tokens = -1;
         // Misc
         int pad_multiple;  // Used in the padding case of unpermute
         bool enable_unpermute = false;
