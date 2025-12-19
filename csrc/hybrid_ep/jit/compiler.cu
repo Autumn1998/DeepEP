@@ -128,16 +128,6 @@ std::any NVCCCompiler::get_instance(std::string library_path, std::string kernel
                                 library_path);
     }
 
-    // Unique the compiled lib from different rank
-    std::string unique_library_path = jit_dir + "/" + kernel_key + ".so";
-    std::string unique_command = "mv " + library_path + " " + unique_library_path;
-    if(library_path != unique_library_path) {
-        auto ret = std::system(unique_command.c_str());
-        if (ret != 0) {
-            throw std::runtime_error("Failed to unique the library: " + unique_command);
-        }
-    }
-
     // Run the get_function_ptr, then we get the compiled template
     std::any func_ptr = get_ptr();
     return func_ptr;
