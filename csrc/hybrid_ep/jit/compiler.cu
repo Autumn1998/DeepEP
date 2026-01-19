@@ -12,6 +12,10 @@ inline std::string get_env(std::string name) {
 }
 
 std::string get_jit_dir() {
+    std::string cache_dir = get_env("HYBRID_EP_CACHE");
+    if (!cache_dir.empty()) {
+        return cache_dir;
+    }
     std::string home_dir = get_env("HOME");
     if (home_dir.empty()) {
         home_dir = "/tmp";  // Fallback to /tmp if HOME is not set
@@ -128,6 +132,13 @@ std::any NVCCCompiler::get_instance(std::string library_path, std::string kernel
                                 library_path);
     }
 
+    // Unique the compiled lib from different rank
+    std::string unique_library_path = jit_dir + "/" + kernel_key + ".so";
+    std::string unique_command = "mv " + library_path + " " + unique_library_path;
+    if(library_path != unique_library_path) {
+        std::system(unique_command.c_str());
+    }
+    
     // Run the get_function_ptr, then we get the compiled template
     std::any func_ptr = get_ptr();
     return func_ptr;

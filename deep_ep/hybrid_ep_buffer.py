@@ -131,7 +131,7 @@ class HybridEPBuffer:
             self.node_rank, 
             self.group_size, 
             os.path.dirname(os.path.abspath(__file__)), 
-            load_cached_kernels = False, 
+            load_cached_kernels = True, 
             use_shared_buffer = True,
             use_mnnvl = use_mnnvl, # If use_mnnvl is True, the fabric memory handle will be used.
         )
