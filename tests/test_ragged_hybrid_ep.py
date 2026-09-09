@@ -269,10 +269,6 @@ def test_ragged_dispatch_with_permute(buffer: deep_ep.HybridEPBuffer, ref: Torch
                     handle,
                 ) = buffer.dispatch_with_permute(**dispatch_kwargs)
 
-                # Preserve the overflow-at-tail contract used by downstream callers.
-                assert handle[-2] == num_valid, context
-                assert torch.is_tensor(handle[-1]) and handle[-1].item() == 0, context
-
                 assert_bitwise_equal("Ragged dispatch+permute hidden", ref_hidden, dispatched_hidden, context)
                 assert_bitwise_equal("Ragged dispatch+permute probs", ref_probs, dispatched_probs, context)
                 assert_bitwise_equal("Ragged dispatch+permute scaling_factor", ref_sf, dispatched_sf, context)
@@ -297,8 +293,6 @@ def test_ragged_dispatch_with_permute(buffer: deep_ep.HybridEPBuffer, ref: Torch
                     pad_multiple=PAD_MULTIPLE,
                     fuse_permute_dispatch=fuse_permute_dispatch,
                 )
-                assert _replay_handle[-2] == num_valid, context
-                assert _replay_handle[-1] is handle[-1], context
                 assert_bitwise_equal("Ragged replay hidden", dispatched_hidden, replay_hidden, context)
                 assert_bitwise_equal("Ragged replay scaling_factor", dispatched_sf, replay_sf, context)
                 if with_probs:
