@@ -457,8 +457,8 @@
    int64_t extended_warp_id = threadIdx.x / 128;
    extern __shared__ int shmem_in_permute_kernel[];
    int* expert_routing_map = shmem_in_permute_kernel;
-   int num_dispatched_tokens = num_dispatched_tokens_ptr != nullptr
-                                  ? *num_dispatched_tokens_ptr : num_dispatched_tokens_value;
+   int num_dispatched_tokens = num_dispatched_tokens_value >= 0
+                                  ? num_dispatched_tokens_value : *num_dispatched_tokens_ptr;
 
 
    for(int64_t block_start = blockIdx.x * tokens_per_block; block_start < num_dispatched_tokens; block_start += tokens_per_block * gridDim.x) {
@@ -550,7 +550,7 @@
        args.with_probs ? reinterpret_cast<float*>(args.probs_ptr) : nullptr, 
        args.row_id_map.data_ptr<int>(),
        count_on_gpu ? count.data_ptr<int>() : nullptr,
-       count_on_gpu ? 0 : count.item<int>(),
+       count_on_gpu ? -1 : *count.data_ptr<int>(),
        args.num_of_local_experts, 
        args.hidden_size, 
        args.local_rank,
