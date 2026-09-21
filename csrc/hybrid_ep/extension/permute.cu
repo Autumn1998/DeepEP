@@ -444,6 +444,7 @@
                                   ProbType* probs,
                                   int* row_id_map,
                                   int* num_dispatched_tokens_ptr,
+                                  int num_dispatched_tokens_value,
                                   int num_of_local_experts,
                                   int hidden_size,
                                   int local_rank,
@@ -456,7 +457,8 @@
    int64_t extended_warp_id = threadIdx.x / 128;
    extern __shared__ int shmem_in_permute_kernel[];
    int* expert_routing_map = shmem_in_permute_kernel;
-   int num_dispatched_tokens = *num_dispatched_tokens_ptr;
+   int num_dispatched_tokens = num_dispatched_tokens_ptr != nullptr
+                                  ? *num_dispatched_tokens_ptr : num_dispatched_tokens_value;
 
 
    for(int64_t block_start = blockIdx.x * tokens_per_block; block_start < num_dispatched_tokens; block_start += tokens_per_block * gridDim.x) {
@@ -538,6 +540,8 @@
    constexpr int tokens_per_block = block_size / 128;
    int grid_size = args.num_of_blocks_unpermute;
    int shared_mem_size = args.num_of_local_experts * tokens_per_block * sizeof(int);
+   const auto& count = args.num_dispatched_tokens_tensor;
+   const bool count_on_gpu = count.is_cuda();
  
    unpermute_kernel<<<grid_size, block_size, shared_mem_size, args.stream>>>(
        reinterpret_cast<__nv_bfloat16*>(args.permuted_tokens.data_ptr()),
@@ -545,7 +549,8 @@
        args.with_probs ? reinterpret_cast<float*>(args.permuted_probs.value().data_ptr()) : nullptr,
        args.with_probs ? reinterpret_cast<float*>(args.probs_ptr) : nullptr, 
        args.row_id_map.data_ptr<int>(),
-       args.num_dispatched_tokens_tensor.data_ptr<int>(), 
+       count_on_gpu ? count.data_ptr<int>() : nullptr,
+       count_on_gpu ? 0 : count.item<int>(),
        args.num_of_local_experts, 
        args.hidden_size, 
        args.local_rank,
